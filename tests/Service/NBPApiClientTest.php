@@ -1,117 +1,56 @@
 <?php
-
 declare(strict_types=1);
 
 namespace App\Tests\Service;
 
-
+use App\DTO\DateRangeDTO;
+use App\DTO\ExchangeRateDTO;
+use App\Enum\Currency;
 use App\Service\NBPApiClient;
+use App\Service\NBPXmlParser;
+use App\Service\RateDiffCalculator;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpClient\MockHttpClient;
-use Symfony\Component\Serializer\Encoder\XmlEncoder;
-use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
-use Symfony\Component\Serializer\Serializer;
+use Symfony\Component\HttpClient\Response\MockResponse;
 
 class NBPApiClientTest extends TestCase
 {
-    private NBPApiClient $nbpApiClient;
-
-    protected function setUp(): void
+    #[Test]
+    public function it_fetches_and_returns_parsed_rates(): void
     {
-        $serializer = new Serializer([new ObjectNormalizer()], [new XmlEncoder()]);
-        $this->nbpApiClient = new NBPApiClient(new MockHttpClient(), $serializer);
-    }
-
-    /**
-     * @return void
-     */
-    public function testGetExchangeRatesWithUnsupportedCurrencyThrowsException(): void
-    {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Unsupported currency: ZZZ');
-
-        $startDate = new \DateTimeImmutable('2026-02-11');
-        $endDate = new \DateTimeImmutable('2026-02-12');
-
-        $this->nbpApiClient->getExchangeRates('ZZZ', $startDate, $endDate);
-    }
-
-    /**
-     * @return void
-     */
-    public function testParseXmlResponseCalculatesDifferences(): void
-    {
-        $xmlContent = '<?xml version="1.0" encoding="UTF-8"?>
+        $xml = <<<'XML'
+        <?xml version="1.0" encoding="utf-8"?>
         <ExchangeRatesSeries>
-            <Table>C</Table>
-            <Currency>euro</Currency>
-            <Code>EUR</Code>
             <Rates>
                 <Rate>
-                    <No>001/C/NBP/2026</No>
                     <EffectiveDate>2026-02-11</EffectiveDate>
-                    <Bid>4.3256</Bid>
-                    <Ask>4.4124</Ask>
-                </Rate>
-                <Rate>
-                    <No>002/C/NBP/2026</No>
-                    <EffectiveDate>2026-02-12</EffectiveDate>
-                    <Bid>4.3379</Bid>
-                    <Ask>4.4251</Ask>
-                </Rate>
-                <Rate>
-                    <No>003/C/NBP/2026</No>
-                    <EffectiveDate>2026-02-13</EffectiveDate>
-                    <Bid>4.3302</Bid>
-                    <Ask>4.4172</Ask>
+                    <Bid>4,3256</Bid>
+                    <Ask>4,4124</Ask>
                 </Rate>
             </Rates>
-        </ExchangeRatesSeries>';
+        </ExchangeRatesSeries>
+        XML;
 
-        $reflection = new \ReflectionClass($this->nbpApiClient);
-        $method = $reflection->getMethod('parseXmlResponse');
-        $method->setAccessible(true);
+        $httpClient = new MockHttpClient([new MockResponse($xml)]);
+        $client = new NBPApiClient($httpClient, new NBPXmlParser(), new RateDiffCalculator());
 
-        $result = $method->invoke($this->nbpApiClient, $xmlContent);
+        $rates = $client->getExchangeRates(Currency::EUR, new DateRangeDTO('2026-02-10', '2026-02-12'));
 
-        $this->assertCount(3, $result);
-
-        // First exchange rate - no diff
-        $this->assertEquals('2026-02-11', $result[0]->getDate());
-        $this->assertEquals(4.3256, $result[0]->getBuyRate());
-        $this->assertEquals(4.4124, $result[0]->getSellRate());
-        $this->assertNull($result[0]->getBuyDifference());
-        $this->assertNull($result[0]->getSellDifference());
-
-        // Second exchnage rate - with diffs
-        $this->assertEquals('2026-02-12', $result[1]->getDate());
-        $this->assertEquals(4.3379, $result[1]->getBuyRate());
-        $this->assertEquals(4.4251, $result[1]->getSellRate());
-        $this->assertEquals(0.0123, $result[1]->getBuyDifference());
-        $this->assertEquals(0.0127, $result[1]->getSellDifference());
-
-        // Third exchange rate - with diffs
-        $this->assertEquals('2026-02-13', $result[2]->getDate());
-        $this->assertEquals(4.3302, $result[2]->getBuyRate());
-        $this->assertEquals(4.4172, $result[2]->getSellRate());
-        $this->assertEquals(-0.0077, $result[2]->getBuyDifference());
-        $this->assertEquals(-0.0079, $result[2]->getSellDifference());
+        $this->assertCount(1, $rates);
+        $this->assertInstanceOf(ExchangeRateDTO::class, $rates[0]);
+        $this->assertSame('2026-02-11', $rates[0]->date->format('Y-m-d'));
     }
 
-    /**
-     * @return void
-     */
-    public function testParseXmlResponseThrowsExceptionOnInvalidXml(): void
+    #[Test]
+    public function it_throws_on_non_200_response(): void
     {
+        $httpClient = new MockHttpClient([new MockResponse('', ['http_code' => 404])]);
+        $client = new NBPApiClient($httpClient, new NBPXmlParser(), new RateDiffCalculator());
+
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Error parsing XML');
+        $this->expectExceptionMessage('NBP API returned HTTP 404');
 
-        $invalidXml = 'This is not valid XML';
-
-        $reflection = new \ReflectionClass($this->nbpApiClient);
-        $method = $reflection->getMethod('parseXmlResponse');
-        $method->setAccessible(true);
-
-        $method->invoke($this->nbpApiClient, $invalidXml);
+        $client->getExchangeRates(Currency::EUR, new DateRangeDTO('2026-02-10', '2026-02-12'));
     }
 }

@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace App\EventListener;
@@ -10,7 +9,7 @@ use Symfony\Component\HttpKernel\Event\RequestEvent;
 
 class TokenAuthenticationListener
 {
-    private const TOKEN_HEADER = 'X-TOKEN-SYSTEM';
+    private const string TOKEN_HEADER = 'X-TOKEN-SYSTEM';
 
     /**
      * @param string $token

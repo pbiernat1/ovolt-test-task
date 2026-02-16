@@ -3,12 +3,15 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\DTO\DateRangeDTO;
+use App\Enum\Currency;
 use App\Service\NBPApiClient;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 use OpenApi\Attributes as OA;
+use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use DateTimeImmutable;
 
@@ -26,36 +29,40 @@ final class ExchangeController extends RESTController
     #[OA\Parameter(name: 'start', description: 'Start date YYYY-MM-DD', in: 'path', required: true)]
     #[OA\Parameter(name: 'end', description: 'End date YYYY-MM-DD', in: 'path', required: true)]
     #[OA\Response(response: 200, description: 'Exchange rates')]
-    public function getRates(
-        string $currency,
-        string $start,
-        string $end,
-        Request $request
-    ): JsonResponse {
-        $data = $this->validator->validate([
-            'currency' => $currency,
-            'start' => $start,
-            'end' => $end,
-        ], null, ['api']);
-
-        if (count($data) > 0) {
-            return $this->response(success: false, message: 'Validation failed', status: Response::HTTP_BAD_REQUEST);
+    public function getRates(string $currency, string $start, string $end): JsonResponse
+    {
+        try {
+            $currencyEnum = Currency::fromInput($currency);
+        } catch (\ValueError) {
+            return $this->response(
+                success: false,
+                message: sprintf('Unsupported currency: %s. Allowed: %s.', $currency, implode(', ', array_column(Currency::cases(), 'name'))),
+                status: Response::HTTP_BAD_REQUEST,
+            );
         }
 
-        $startDate = new DateTimeImmutable($start);
-        $endDate = new DateTimeImmutable($end);
-
-        if ($endDate->diff($startDate)->days > 7) {
-            return $this->response(success: false, message: 'Max 7 days range', status: Response::HTTP_BAD_REQUEST);
+        try {
+            $range = new DateRangeDTO($start, $end);
+        } catch (\InvalidArgumentException $e) {
+            return $this->response(
+                success: false,
+                message: $e->getMessage(),
+                status: Response::HTTP_BAD_REQUEST
+            );
         }
 
-        $allowed = ['EUR', 'USD', 'CHF'];
-        if (!in_array($currency, $allowed, true)) {
-            return $this->response(success: false, message: 'Invalid currency', status: Response::HTTP_BAD_REQUEST);
+        try {
+            $rates = $this->nbpApiClient->getExchangeRates($currencyEnum, $range);
+        } catch (\RuntimeException $e) {
+            return $this->response(
+                success: false,
+                message: $e->getMessage(),
+                status: Response::HTTP_BAD_GATEWAY
+            );
         }
 
-        $rates = $this->nbpApiClient->getExchangeRates($currency, $startDate, $endDate);
-
-        return $this->response(data: $rates);
+        return $this->json(['data' => $rates], context: [
+            DateTimeNormalizer::FORMAT_KEY => 'Y-m-d',
+        ]);
     }
 }
