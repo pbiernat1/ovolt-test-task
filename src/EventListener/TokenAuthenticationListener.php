@@ -41,7 +41,8 @@ class TokenAuthenticationListener
         if ($token === null) {
             $response = new JsonResponse(
                 [
-                    'error' => 'Missing token header',
+                    'success' => false,
+                    'message' => 'Missing token header',
                     'details' => sprintf('Required header: %s', self::TOKEN_HEADER)
                 ],
                 Response::HTTP_UNAUTHORIZED
