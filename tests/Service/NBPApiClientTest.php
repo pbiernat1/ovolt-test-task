@@ -15,13 +15,11 @@ use Symfony\Component\Serializer\Serializer;
 class NBPApiClientTest extends TestCase
 {
     private NBPApiClient $nbpApiClient;
-    private MockHttpClient $httpClient;
 
     protected function setUp(): void
     {
-        $this->httpClient = new MockHttpClient();
         $serializer = new Serializer([new ObjectNormalizer()], [new XmlEncoder()]);
-        $this->nbpApiClient = new NBPApiClient($this->httpClient, $serializer);
+        $this->nbpApiClient = new NBPApiClient(new MockHttpClient(), $serializer);
     }
 
     /**
