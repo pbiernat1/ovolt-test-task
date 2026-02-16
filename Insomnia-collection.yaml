@@ -1,0 +1,129 @@
+type: collection.insomnia.rest/5.0
+name: Main
+meta:
+  id: wrk_ce56a95b3e654dacba9d7aca55a0def0
+  created: 1771249471618
+  modified: 1771249498121
+  description: ""
+collection:
+  - url: https://127.0.0.1:8001/api/rates/USD/2026-02-09/2026-02-16
+    name: Correct request - 7 days range
+    meta:
+      id: req_dc90cee32179432185c9353583dc0751
+      created: 1771249471622
+      modified: 1771250846494
+      isPrivate: false
+      description: ""
+      sortKey: -1771249471623
+    method: GET
+    headers:
+      - name: User-Agent
+        value: insomnia/11.6.1
+        id: pair_4846f1240cdf40e08ac8c143ce34bc5c
+      - id: pair_ba0381cd549444779c250fdbdc1f33b3
+        name: X-TOKEN-SYSTEM
+        value: a1234567890abcdef
+        description: ""
+        disabled: false
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: https://127.0.0.1:8001/api/rates/USD/2026-02-08/2026-02-16
+    name: Incorrect request - more than 7 days range
+    meta:
+      id: req_9fde7b5c474b4b0a90a70c8e0c75a779
+      created: 1771250874123
+      modified: 1771250887246
+      isPrivate: false
+      description: ""
+      sortKey: -1766246141545.5
+    method: GET
+    headers:
+      - name: User-Agent
+        value: insomnia/11.6.1
+        id: pair_4846f1240cdf40e08ac8c143ce34bc5c
+      - id: pair_ba0381cd549444779c250fdbdc1f33b3
+        name: X-TOKEN-SYSTEM
+        value: a1234567890abcdef
+        description: ""
+        disabled: false
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: https://127.0.0.1:8001/api/rates/ZZZ/2026-02-09/2026-02-16
+    name: Incorrect request - Unknown currency
+    meta:
+      id: req_a66db602075447f4949c153acb7a0171
+      created: 1771250905579
+      modified: 1771250909442
+      isPrivate: false
+      description: ""
+      sortKey: -1768747806584.25
+    method: GET
+    headers:
+      - name: User-Agent
+        value: insomnia/11.6.1
+        id: pair_4846f1240cdf40e08ac8c143ce34bc5c
+      - id: pair_ba0381cd549444779c250fdbdc1f33b3
+        name: X-TOKEN-SYSTEM
+        value: a1234567890abcdef
+        description: ""
+        disabled: false
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: https://127.0.0.1:8001/api/rates/USD/2026-02-09/2026-02-16
+    name: Incorrect request - Missing auth token
+    meta:
+      id: req_aef9cf95b2ea47f2b0c804d3a0e97956
+      created: 1771250924589
+      modified: 1771250939663
+      isPrivate: false
+      description: ""
+      sortKey: -1767496974064.875
+    method: GET
+    headers:
+      - name: User-Agent
+        value: insomnia/11.6.1
+        id: pair_4846f1240cdf40e08ac8c143ce34bc5c
+      - id: pair_ba0381cd549444779c250fdbdc1f33b3
+        name: X-TOKEN-SYSTEM
+        value: a1234567890abcdef
+        description: ""
+        disabled: true
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_e99795b06aa28789a2ad4b280eb3335f3350fd21
+    created: 1771249471620
+    modified: 1771249471620
+environments:
+  name: Base Environment
+  meta:
+    id: env_e99795b06aa28789a2ad4b280eb3335f3350fd21
+    created: 1771249471619
+    modified: 1771249471619
+    isPrivate: false
